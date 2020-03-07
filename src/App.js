@@ -1,52 +1,11 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./App.css";
+import { CURRENCIES } from "./data/currencies";
+import { fetchRates } from "./api";
 
-const CURRENCIES = {
-  USD: "United States Dollar",
-  AUD: "Australian Dollar",
-  BGN: "Bulgarian Lev",
-  BRL: "Brazilian Real",
-  CAD: "Canadian Dollar",
-  CHF: "Swiss Franc",
-  CNY: "Chinese Yuan",
-  CZK: "Czech Republic Koruna",
-  DKK: "Danish Krone",
-  GBP: "British Pound Sterling",
-  HKD: "Hong Kong Dollar",
-  HRK: "Croatian Kuna",
-  HUF: "Hungarian Forint",
-  IDR: "Indonesian Rupiah",
-  ILS: "Israeli New Sheqel",
-  INR: "Indian Rupee",
-  JPY: "Japanese Yen",
-  KRW: "South Korean Won",
-  MXN: "Mexican Peso",
-  MYR: "Malaysian Ringgit",
-  NOK: "Norwegian Krone",
-  NZD: "New Zealand Dollar",
-  PHP: "Philippine Peso",
-  PLN: "Polish Zloty",
-  RON: "Romanian Leu",
-  RUB: "Russian Ruble",
-  SEK: "Swedish Krona",
-  SGD: "Singapore Dollar",
-  THB: "Thai Baht",
-  TRY: "Turkish Lira",
-  ZAR: "South African Rand",
-  EUR: "Euro"
-};
+import "./App.css";
 
 const rates = {};
 const currencies = Object.entries(CURRENCIES);
-
-async function fetchRates(base = "USD") {
-  const corsEndpoint = "https://cors-anywhere.herokuapp.com";
-  const endpoint = `${corsEndpoint}/https://api.exchangeratesapi.io/latest`;
-  const response = await axios.get(`${endpoint}?base=${base}`);
-  const { data } = response;
-  return data;
-}
 
 async function convert(amount, from, to) {
   if (!rates[from]) {
@@ -56,6 +15,12 @@ async function convert(amount, from, to) {
   }
 
   return amount * rates[from].rates[to];
+}
+
+function formatCurrency(rawAmount, to) {
+  return Intl.NumberFormat("en-US", { style: "currency", currency: to }).format(
+    rawAmount
+  );
 }
 
 function App() {
@@ -76,7 +41,7 @@ function App() {
 
   useEffect(() => {
     convert(fromAmount, fromSelect, toSelect).then(result => {
-      setResult(result);
+      setResult(formatCurrency(result, toSelect));
     });
   }, [fromSelect, toSelect, fromAmount]);
 
