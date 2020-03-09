@@ -43,6 +43,7 @@ function App() {
     convert(fromAmount, fromSelect, toSelect).then(result => {
       setResult(formatCurrency(result, toSelect));
     });
+    document.title = `Currency Converter (${fromSelect} - ${toSelect})`;
   }, [fromSelect, toSelect, fromAmount]);
 
   return (
