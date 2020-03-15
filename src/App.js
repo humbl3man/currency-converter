@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { CURRENCIES } from "./data/currencies";
 import { fetchRates } from "./api";
 
@@ -8,44 +8,56 @@ const currencies = Object.entries(CURRENCIES);
 
 const rates = {};
 
-function formatCurrency(rawAmount, to) {
-  return Intl.NumberFormat("en-US", { style: "currency", currency: to }).format(
-    rawAmount
-  );
-}
-
 function App() {
   const [fromSelect, setFromSelect] = useState("USD");
   const [toSelect, setToSelect] = useState("EUR");
   const [fromAmount, setFromAmount] = useState("");
   const [result, setResult] = useState("");
   const inputRef = useRef(null);
-
-  function handleFromSelect(e) {
-    setFromSelect(e.target.value);
-  }
-  function handleToSelect(e) {
-    setToSelect(e.target.value);
-  }
-  function handleAmountChange(e) {
-    setFromAmount(e.target.value);
-  }
-
-  useEffect(() => {
-    async function convert(amount, from, to) {
+  const timesRan = useRef(0);
+  const formatCurrency = useCallback((rawAmount, to) => {
+    return Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: to
+    }).format(rawAmount);
+  }, []);
+  const convert = useCallback(
+    async (amount, from, to) => {
       if (!rates[from]) {
         console.log(`no rate is available for ${from}. Fetching...`);
         const newBaseRate = await fetchRates(from);
         rates[from] = newBaseRate;
       }
 
-      return amount * rates[from].rates[to];
-    }
-    convert(fromAmount, fromSelect, toSelect).then(result => {
-      setResult(formatCurrency(result, toSelect));
-    });
+      const conversionAmount = amount * rates[from].rates[to];
+      return formatCurrency(conversionAmount, to);
+    },
+    [formatCurrency]
+  );
+
+  const fetchResult = useCallback(async () => {
+    const result = await convert(fromAmount, fromSelect, toSelect);
+    setResult(result);
+  }, [fromAmount, fromSelect, toSelect, convert]);
+
+  function handleFromSelect(e) {
+    setFromSelect(e.target.value);
+  }
+
+  function handleToSelect(e) {
+    setToSelect(e.target.value);
+  }
+
+  function handleAmountChange(e) {
+    setFromAmount(e.target.value);
+  }
+
+  useEffect(() => {
+    console.log("rendered", timesRan.current);
+    timesRan.current++;
+    fetchResult();
     document.title = `Currency Converter (${fromSelect} - ${toSelect})`;
-  }, [fromSelect, toSelect, fromAmount]);
+  }, [fromSelect, toSelect, fromAmount, fetchResult]);
 
   return (
     <div className="p-2 mx-auto mt-5 max-w-xl">
@@ -140,6 +152,7 @@ function App() {
               setFromAmount("");
               setFromSelect("USD");
               setToSelect("EUR");
+
               inputRef.current.focus();
             }}
             className="bg-red-500 hover:bg-red-400 text-white font-bold py-1 px-4 rounded"
