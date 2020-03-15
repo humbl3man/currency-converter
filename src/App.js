@@ -14,7 +14,6 @@ function App() {
   const [fromAmount, setFromAmount] = useState("");
   const [result, setResult] = useState("");
   const inputRef = useRef(null);
-  const timesRan = useRef(0);
   const formatCurrency = useCallback((rawAmount, to) => {
     return Intl.NumberFormat("en-US", {
       style: "currency",
@@ -53,8 +52,6 @@ function App() {
   }
 
   useEffect(() => {
-    console.log("rendered", timesRan.current);
-    timesRan.current++;
     fetchResult();
     document.title = `Currency Converter (${fromSelect} - ${toSelect})`;
   }, [fromSelect, toSelect, fromAmount, fetchResult]);
