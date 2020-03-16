@@ -11,8 +11,8 @@ const rates = {};
 function App() {
   const [fromSelect, setFromSelect] = useState("USD");
   const [toSelect, setToSelect] = useState("EUR");
-  const [fromAmount, setFromAmount] = useState("");
-  const [result, setResult] = useState("");
+  const [fromAmount, setFromAmount] = useState(0);
+  const [result, setResult] = useState(0);
   const inputRef = useRef(null);
   const formatCurrency = useCallback((rawAmount, to) => {
     return Intl.NumberFormat("en-US", {
