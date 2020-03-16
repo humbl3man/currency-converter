@@ -6,14 +6,22 @@ import "./App.css";
 
 const currencies = Object.entries(CURRENCIES);
 
-const rates = {};
+function usePrevious(value = {}) {
+  const ref = useRef(value);
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
 
 function App() {
   const [fromSelect, setFromSelect] = useState("USD");
   const [toSelect, setToSelect] = useState("EUR");
-  const [fromAmount, setFromAmount] = useState(0);
+  const [fromAmount, setFromAmount] = useState("");
   const [result, setResult] = useState(0);
   const inputRef = useRef(null);
+  const rates = usePrevious();
+
   const formatCurrency = useCallback((rawAmount, to) => {
     return Intl.NumberFormat("en-US", {
       style: "currency",
