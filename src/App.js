@@ -6,21 +6,23 @@ import "./App.css";
 
 const currencies = Object.entries(CURRENCIES);
 
-function usePrevious(value = {}) {
-  const ref = useRef(value);
-  useEffect(() => {
-    ref.current = value;
-  });
-  return ref.current;
-}
+const renderCurrencyOption = ([code, label]) => {
+  return (
+    <option value={code} key={code}>
+      {label}
+    </option>
+  );
+};
 
 function App() {
-  const [fromSelect, setFromSelect] = useState("USD");
-  const [toSelect, setToSelect] = useState("EUR");
+  const [currency, setCurrency] = useState({
+    from: "USD",
+    to: "EUR"
+  });
   const [fromAmount, setFromAmount] = useState("");
   const [result, setResult] = useState(0);
   const inputRef = useRef(null);
-  const rates = usePrevious();
+  const rates = useRef({});
 
   const formatCurrency = useCallback((rawAmount, to) => {
     return Intl.NumberFormat("en-US", {
@@ -30,29 +32,30 @@ function App() {
   }, []);
   const convert = useCallback(
     async (amount, from, to) => {
-      if (!rates[from]) {
+      if (!rates.current[from]) {
         console.log(`no rate is available for ${from}. Fetching...`);
         const newBaseRate = await fetchRates(from);
-        rates[from] = newBaseRate;
+        rates.current[from] = newBaseRate;
       }
 
-      const conversionAmount = amount * rates[from].rates[to];
+      const conversionAmount = amount * rates.current[from].rates[to];
       return formatCurrency(conversionAmount, to);
     },
-    [formatCurrency]
+    [formatCurrency, rates]
   );
 
   const fetchResult = useCallback(async () => {
-    const result = await convert(fromAmount, fromSelect, toSelect);
+    const { from, to } = currency;
+    const result = await convert(fromAmount, from, to);
     setResult(result);
-  }, [fromAmount, fromSelect, toSelect, convert]);
+  }, [fromAmount, currency, convert]);
 
-  function handleFromSelect(e) {
-    setFromSelect(e.target.value);
-  }
-
-  function handleToSelect(e) {
-    setToSelect(e.target.value);
+  function handleCurrencySelect(e) {
+    const { name, value } = e.target;
+    setCurrency({
+      ...currency,
+      [name]: value
+    });
   }
 
   function handleAmountChange(e) {
@@ -60,13 +63,14 @@ function App() {
   }
 
   useEffect(() => {
+    const { from, to } = currency;
     fetchResult();
-    document.title = `Currency Converter (${fromSelect} - ${toSelect})`;
-  }, [fromSelect, toSelect, fromAmount, fetchResult]);
+    document.title = `Currency Converter (${from} - ${to})`;
+  }, [currency, fetchResult]);
 
   return (
     <div className="p-2 mx-auto mt-5 max-w-xl">
-      <h1 className="text-2xl mb-3">Currency Converter</h1>
+      <h1 className="text-2xl text-center mb-3">Currency Converter</h1>
       <form
         onSubmit={async e => {
           e.preventDefault();
@@ -81,7 +85,7 @@ function App() {
             ref={inputRef}
             value={fromAmount}
             onChange={handleAmountChange}
-            placeholder={`Enter ${fromSelect} value`}
+            placeholder={`Enter ${currency.from} value`}
             className="bg-white focus:outline-none focus:shadow-outline border border-gray-300 rounded-lg py-2 px-4 block w-full appearance-none leading-normal"
             type="number"
           />
@@ -95,17 +99,12 @@ function App() {
             <div className="relative">
               <select
                 id="from"
-                value={fromSelect}
-                onChange={handleFromSelect}
+                name="from"
+                value={currency.from}
+                onChange={handleCurrencySelect}
                 className="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
               >
-                {currencies.map(([code, label]) => {
-                  return (
-                    <option value={code} key={code}>
-                      {label}
-                    </option>
-                  );
-                })}
+                {currencies.map(renderCurrencyOption)}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <svg
@@ -125,17 +124,12 @@ function App() {
             <div className="relative">
               <select
                 id="to"
-                value={toSelect}
-                onChange={handleToSelect}
+                name="to"
+                value={currency.to}
+                onChange={handleCurrencySelect}
                 className="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
               >
-                {currencies.map(([code, label]) => {
-                  return (
-                    <option value={code} key={code}>
-                      {label}
-                    </option>
-                  );
-                })}
+                {currencies.map(renderCurrencyOption)}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
                 <svg
@@ -155,8 +149,10 @@ function App() {
             type="button"
             onClick={() => {
               setFromAmount("");
-              setFromSelect("USD");
-              setToSelect("EUR");
+              setCurrency({
+                from: "USD",
+                to: "EUR"
+              });
 
               inputRef.current.focus();
             }}
